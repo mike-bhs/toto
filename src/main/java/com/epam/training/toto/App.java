@@ -1,7 +1,11 @@
 package com.epam.training.toto;
 
 import com.epam.training.toto.csv.CsvReader;
-import com.epam.training.toto.domain.*;
+import com.epam.training.toto.domain.Bet;
+import com.epam.training.toto.domain.BetBuilder;
+import com.epam.training.toto.domain.Hit;
+import com.epam.training.toto.domain.InvalidBetException;
+import com.epam.training.toto.domain.Outcome;
 import com.epam.training.toto.service.TotoService;
 
 import java.io.BufferedReader;
@@ -11,22 +15,15 @@ import java.util.List;
 import java.util.Optional;
 
 public class App {
-    public static void main( String[] args ) throws IOException {
-        CsvReader csvReader = new CsvReader("materials/toto.csv", ";");
-        List<List<String>> fileContent;
+    public static void main(String[] args) {
+        TotoService totoService;
 
         try {
-             fileContent = csvReader.readAll();
+             totoService = setupToto("materials/toto.csv", ";");
         } catch (IOException e) {
-            System.out.println("Failed to read file: " + e.getMessage());
+            System.out.printf("Failed to read file: %s%n", e.getMessage());
             return;
         }
-
-        TotoService totoService = new TotoService(fileContent);
-        totoService.readAllRounds();
-
-        printLargestRecordedPrize(totoService);
-        printWinsDistribution(totoService);
 
         Bet bet;
 
@@ -36,7 +33,7 @@ public class App {
             System.out.println("Failed to read input");
             return;
         } catch (InvalidBetException e) {
-            System.out.println("Failed to read your bet: " + e.getMessage());
+            System.out.printf("Failed to read your bet: %s%n", e.getMessage());
             return;
         }
 
@@ -44,10 +41,23 @@ public class App {
 
         if (hitOptional.isPresent()) {
             Hit hit = hitOptional.get();
-            System.out.println("Result: hits: " + hit.getHitsCount() + ", amount: " + hit.getPrizeAmount() + " " + hit.getPrizeCurrency());
+            System.out.printf("Result: hits: %d, amount: %d %s%n", hit.getHitsCount(), hit.getPrizeAmount(), hit.getPrizeCurrency());
         } else {
             System.out.println("Result: better luck next time");
         }
+    }
+
+    private static TotoService setupToto(String statsFilePath, String separator) throws IOException {
+        CsvReader csvReader = new CsvReader(statsFilePath, separator);
+        List<List<String>> fileContent = csvReader.readAll();
+
+        TotoService totoService = new TotoService(fileContent);
+        totoService.readAllRounds();
+
+        printLargestRecordedPrize(totoService);
+        printWinsDistribution(totoService);
+
+        return totoService;
     }
 
     private static Bet readBetFromConsole() throws IOException, InvalidBetException {
@@ -68,12 +78,12 @@ public class App {
     }
 
     private static void printWinsDistribution(TotoService totoService) {
-        System.out.printf("Team #1 won: %.2f\n", totoService.calculateWinsPercentage(Outcome.FIRST_TEAM_WON));
-        System.out.printf("Team #2 won: %.2f\n", totoService.calculateWinsPercentage(Outcome.SECOND_TEAM_WON));
-        System.out.printf("Draw %.2f\n", totoService.calculateWinsPercentage(Outcome.DRAW));
+        System.out.printf("Team #1 won: %.2f%n", totoService.calculateWinsPercentage(Outcome.FIRST_TEAM_WON));
+        System.out.printf("Team #2 won: %.2f%n", totoService.calculateWinsPercentage(Outcome.SECOND_TEAM_WON));
+        System.out.printf("Draw %.2f%n", totoService.calculateWinsPercentage(Outcome.DRAW));
     }
 
     private static void printLargestRecordedPrize(TotoService totoService) {
-        System.out.println("Largest prize ever recorded: " + totoService.findLargestRecordedPrize());
+        System.out.printf("Largest prize ever recorded: %d%n", totoService.findLargestRecordedPrize());
     }
 }
